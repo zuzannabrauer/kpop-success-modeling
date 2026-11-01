@@ -16,8 +16,7 @@ def get_groups_profiles_links(list_url):
     profiles_links = []
     for link in content.select('a[href]'):
         url = urljoin(list_url, link['href'])
-        parsed_url = urlparse(url)
-        if 'profile' in parsed_url.path and url not in profiles_links:
+        if 'profile' in url and url not in profiles_links:
             profiles_links.append(url)
     return profiles_links
 
@@ -39,7 +38,6 @@ def get_idols_details(group_profile_link):
     group_name = re.split(r'\s+Members?\s+Profile', soup.select_one('h1').get_text(strip = True), flags = re.IGNORECASE)[0]
 
     idols_details = []
-    fields = IDOL_FIELDS
     aliases = {
         'Former Stage Name': 'Former Stage Names',
         'Birthdate': 'Birthday',
@@ -48,9 +46,9 @@ def get_idols_details(group_profile_link):
     }
 
     def split_combined_value(value):
-        for index, character in enumerate(value):
-            if character == '/':
-                return value[:index].strip() or 'N/A', value[index + 1:].strip() or 'N/A'
+        first, separator, second = value.partition('/')
+        if separator:
+            return first.strip() or 'N/A', second.strip() or 'N/A'
         return value, value
 
     current_idol = None
@@ -62,16 +60,14 @@ def get_idols_details(group_profile_link):
             label, separator, value = line.partition(':')
             if not separator:
                 continue
-            field = re.sub(r'\s+', ' ', label).strip()
+            field = label.strip()
             field = aliases.get(field, field)
             value = value.strip() or 'N/A'
-            if field in {'Stage Name', 'Stage / Birth Name'} or (
-                not paragraph_has_name and 'Name' in field
-            ):
-                current_idol = dict.fromkeys(fields, 'N/A')
-                current_idol['Group'] = group_name
-                idols_details.append(current_idol)
-            if 'Name' in field:
+            if 'Name' in field and field in IDOL_FIELDS:
+                if not paragraph_has_name:
+                    current_idol = dict.fromkeys(IDOL_FIELDS, 'N/A')
+                    current_idol['Group'] = group_name
+                    idols_details.append(current_idol)
                 paragraph_has_name = True
             if current_idol is None:
                 continue
@@ -79,7 +75,7 @@ def get_idols_details(group_profile_link):
                 current_idol['Stage Name'], current_idol['Birth Name'] = split_combined_value(value)
             elif field == 'Official Height / Real Height':
                 current_idol['Official Height'], current_idol['Height'] = split_combined_value(value)
-            elif field in fields:
+            elif field in IDOL_FIELDS:
                 current_idol[field] = value
 
     return idols_details
@@ -90,11 +86,9 @@ girl_group_profile_links = get_groups_profiles_links(girl_groups_list_url)
 boy_group_profile_links = get_groups_profiles_links(boy_groups_list_url)
 
 for group_link in girl_group_profile_links + boy_group_profile_links:
-    group_idols = get_idols_details(group_link)
-    idols_details.extend(group_idols)
+    idols_details.extend(get_idols_details(group_link))
 
 output_file = open("kpop_idols_data.csv", 'w', newline = '', encoding = 'utf-8-sig')
 writer = csv.DictWriter(output_file, fieldnames = IDOL_FIELDS)
 writer.writeheader()
-for idol in idols_details:
-        writer.writerow(idol)
+writer.writerows(idols_details)
