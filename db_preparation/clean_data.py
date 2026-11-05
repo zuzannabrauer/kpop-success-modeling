@@ -3,7 +3,7 @@ from pymongo import MongoClient
 
 MONGO_URI = "mongodb://localhost:27017/"
 DB_NAME = "kpop_db"
-COLLECTION_NAME = "kpop_spotify_monthly_listeners" 
+COLLECTION_NAME = "kpop_mainstream_lvl" 
 
 def fix_and_clean_data_with_report():
     client = MongoClient(MONGO_URI)
