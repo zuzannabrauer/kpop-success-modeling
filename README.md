@@ -5,3 +5,5 @@
 - **success_indicators** = wskaźnik sukcesu oraz przedostania się do mainstream'u (źródło: soridata)
 - **mvs** = dane z YouTube
 - **idols_data** = informacje o konkretnych idolach
+
+`db_preparation` - folder z plikami pozwalającymi na import repo do mongoDB, wstępne czyszczenie danych, rozbicie pliku billboard200 oraz połączenie kolekcji za pomocą `artist_id`
